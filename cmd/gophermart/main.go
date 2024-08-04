@@ -24,10 +24,12 @@ func main() {
 		sugar.Fatal(err)
 	}
 	us := storage.NewUsersStorage(db)
+	os := storage.NewOrdersStorage(db)
 
-	handler := handlers.NewUsersHandler(us)
+	uh := handlers.NewUsersHandler(us)
+	oh := handlers.NewOrdersHandler(os)
 
-	route := handlers.NewRoute(handler)
+	route := handlers.NewRoute(uh, oh, us)
 
 	server := &http.Server{
 		Addr:    cfg.Host,

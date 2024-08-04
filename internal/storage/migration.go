@@ -18,7 +18,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = m.db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS orders (id serial PRIMARY KEY, number text UNIQUE NOT NULL, status text default 'REGISTERED' NOT NULL, accrual bigint default 0 NOT NULL, uploaded_at timestamp);`)
+	_, err = m.db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS orders (id serial PRIMARY KEY, number text UNIQUE NOT NULL, user_id int NOT NULL REFERENCES users(id), status text default 'REGISTERED' NOT NULL, accrual bigint default 0 NOT NULL, uploaded_at timestamp default now());`)
 	if err != nil {
 		return err
 	}

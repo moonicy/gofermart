@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/moonicy/gofermart/internal/users"
+	"github.com/moonicy/gofermart/internal/models"
 	"github.com/moonicy/gofermart/pkg/hash"
 	"io"
 	"net/http"
@@ -10,7 +10,7 @@ import (
 )
 
 func (us *UsersHandler) PostUserReqister(res http.ResponseWriter, req *http.Request) {
-	var user users.User
+	var user models.User
 
 	res.Header().Set("Content-Type", "application/json")
 
@@ -29,7 +29,7 @@ func (us *UsersHandler) PostUserReqister(res http.ResponseWriter, req *http.Requ
 	user.AuthToken = hash.MakeToken(user.Login)
 	user.AuthTokenExpired = time.Now().Add(time.Hour * 24)
 
-	err = us.usersStorage.SetUser(req.Context(), user)
+	err = us.usersStorage.CreateUser(req.Context(), user)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 	}
