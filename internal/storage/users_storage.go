@@ -84,3 +84,30 @@ func (us *UsersStorage) GetUserByAuth(ctx context.Context, token string) (models
 	}
 	return user, nil
 }
+
+func (us *UsersStorage) GetBalance(ctx context.Context, token string) (int, int, error) {
+	row := us.db.QueryRowContext(ctx, `SELECT accrual, withdrawn FROM users WHERE auth_token = $1`, token)
+	var accrual sql.NullInt64
+	var withdrawn sql.NullInt64
+	err := row.Scan(&accrual, &withdrawn)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, 0, ErrNotFound
+		}
+		return 0, 0, err
+	}
+	return int(accrual.Int64), int(withdrawn.Int64), nil
+}
+
+func (us *UsersStorage) AddAccrual(ctx context.Context, userID int, accrual int) error {
+	db := GetDBorTX(ctx, us.db)
+	_, err := db.ExecContext(ctx, `UPDATE users SET accrual = users.accrual + $1 WHERE id = $3`, accrual, userID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			err = ErrConflict
+		}
+		return err
+	}
+	return nil
+}

@@ -18,9 +18,9 @@ func NewConfig() Config {
 }
 
 func (sc *Config) parseFlag() {
-	flag.StringVar(&sc.Host, "a", "localhost:8080", "address and port to run server")
+	flag.StringVar(&sc.Host, "a", "localhost:8081", "address and port to run server")
 	flag.StringVar(&sc.DatabaseURI, "d", "host=localhost port=5432 user=mila password=qwerty dbname=gofermart sslmode=disable", "database uri")
-	flag.StringVar(&sc.AccrualSystemAddress, "r", "", "accrual system address")
+	flag.StringVar(&sc.AccrualSystemAddress, "r", "http://localhost:8080", "accrual system address")
 	flag.Parse()
 
 	if envRunAddr := os.Getenv("RUN_ADDRESS"); envRunAddr != "" {

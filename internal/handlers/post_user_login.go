@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (us *UsersHandler) PostUserLogin(res http.ResponseWriter, req *http.Request) {
+func (uh *UsersHandler) PostUserLogin(res http.ResponseWriter, req *http.Request) {
 	var user models.User
 
 	res.Header().Set("Content-Type", "application/json")
@@ -22,7 +22,7 @@ func (us *UsersHandler) PostUserLogin(res http.ResponseWriter, req *http.Request
 		http.Error(res, err.Error(), http.StatusBadRequest)
 	}
 
-	foundUser, err := us.usersStorage.GetUser(req.Context(), user.Login)
+	foundUser, err := uh.usersStorage.GetUser(req.Context(), user.Login)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 	}
@@ -34,7 +34,7 @@ func (us *UsersHandler) PostUserLogin(res http.ResponseWriter, req *http.Request
 	user.AuthToken = token
 	user.AuthTokenExpired = expiredAt
 
-	err = us.usersStorage.SetToken(req.Context(), user)
+	err = uh.usersStorage.SetToken(req.Context(), user)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 	}

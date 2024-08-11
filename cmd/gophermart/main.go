@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/moonicy/gofermart/internal/accrual"
 	"github.com/moonicy/gofermart/internal/config"
+	"github.com/moonicy/gofermart/internal/demon"
 	"github.com/moonicy/gofermart/internal/handlers"
 	"github.com/moonicy/gofermart/internal/storage"
 	"github.com/moonicy/gofermart/pkg/logger"
@@ -25,6 +27,11 @@ func main() {
 	}
 	us := storage.NewUsersStorage(db)
 	os := storage.NewOrdersStorage(db)
+	uos := storage.NewUserOrderStorage(db, os, us)
+
+	cl := accrual.NewClient(cfg.AccrualSystemAddress)
+	syncOrders := demon.NewSyncOrders(os, cl, us, uos)
+	cancelFn := syncOrders.Run(ctx)
 
 	uh := handlers.NewUsersHandler(us)
 	oh := handlers.NewOrdersHandler(os)
@@ -40,4 +47,5 @@ func main() {
 	if err != nil {
 		sugar.Fatal(err)
 	}
+	cancelFn()
 }

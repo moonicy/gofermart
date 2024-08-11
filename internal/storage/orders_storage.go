@@ -42,3 +42,63 @@ func (os *OrdersStorage) GetOrder(ctx context.Context, number string) (models.Or
 	}
 	return order, nil
 }
+
+func (os *OrdersStorage) GetOrders(ctx context.Context, userID int) ([]models.Order, error) {
+	var order models.Order
+	var orders []models.Order
+	row, err := os.db.QueryContext(ctx, `SELECT id, number, user_id, status, accrual, uploaded_at FROM orders WHERE user_id = $1`, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return orders, ErrNotFound
+		}
+	}
+
+	for row.Next() {
+		err = row.Scan(&order.ID, &order.Number, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return []models.Order{}, ErrNotFound
+			}
+			return []models.Order{}, err
+		}
+		orders = append(orders, order)
+	}
+	return orders, nil
+}
+
+func (os *OrdersStorage) GetBatch(ctx context.Context) ([]models.Order, error) {
+	var order models.Order
+	var orders []models.Order
+	row, err := os.db.QueryContext(ctx, `SELECT id, number, user_id, status, accrual, uploaded_at FROM orders WHERE status in ('NEW', 'REGISTERED', 'PROCESSING') limit 100`)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return orders, ErrNotFound
+		}
+	}
+
+	for row.Next() {
+		err = row.Scan(&order.ID, &order.Number, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return []models.Order{}, ErrNotFound
+			}
+			return []models.Order{}, err
+		}
+		orders = append(orders, order)
+	}
+	return orders, nil
+}
+
+func (os *OrdersStorage) UpdateOrder(ctx context.Context, order models.Order) error {
+	db := GetDBorTX(ctx, os.db)
+
+	_, err := db.ExecContext(ctx, `UPDATE orders SET status=$1, accrual=$2 WHERE number=$3`, order.Status, order.Accrual, order.Number)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			err = ErrConflict
+		}
+		return err
+	}
+	return nil
+}

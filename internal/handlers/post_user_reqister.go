@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (us *UsersHandler) PostUserReqister(res http.ResponseWriter, req *http.Request) {
+func (uh *UsersHandler) PostUserReqister(res http.ResponseWriter, req *http.Request) {
 	var user models.User
 
 	res.Header().Set("Content-Type", "application/json")
@@ -29,7 +29,7 @@ func (us *UsersHandler) PostUserReqister(res http.ResponseWriter, req *http.Requ
 	user.AuthToken = hash.MakeToken(user.Login)
 	user.AuthTokenExpired = time.Now().Add(time.Hour * 24)
 
-	err = us.usersStorage.CreateUser(req.Context(), user)
+	err = uh.usersStorage.CreateUser(req.Context(), user)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 	}

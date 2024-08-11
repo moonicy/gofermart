@@ -14,11 +14,11 @@ func NewRoute(uh *UsersHandler, oh *OrdersHandler, us *storage.UsersStorage) *ch
 		r.Route("/user", func(r chi.Router) {
 			r.Use(middleware.Auth(us))
 			r.Post("/orders", oh.PostUserOrders)
-			//r.Get("/orders", GetUserOrders)
-			//r.Route("/balance", func(r chi.Router) {
-			//	r.Get("/", GetUserBalance)
-			//	r.Post("/withdraw", PostUserBalanceWithdraw)
-			//})
+			r.Get("/orders", oh.GetUserOrders)
+			r.Route("/balance", func(r chi.Router) {
+				r.Get("/", uh.GetUserBalance)
+				r.Post("/withdraw", oh.PostUserBalanceWithdraw)
+			})
 			//r.Get("/withdrawals", GetUserWithdrawals)
 		})
 	})

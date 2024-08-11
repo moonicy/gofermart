@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func (os *OrdersHandler) PostUserOrders(res http.ResponseWriter, req *http.Request) {
+func (oh *OrdersHandler) PostUserOrders(res http.ResponseWriter, req *http.Request) {
 	var order models.Order
 
 	body, err := io.ReadAll(req.Body)
@@ -29,7 +29,7 @@ func (os *OrdersHandler) PostUserOrders(res http.ResponseWriter, req *http.Reque
 	user := models.GetUserFromContext(req.Context())
 	order.UserID = user.ID
 
-	foundOrder, err := os.ordersStorage.GetOrder(req.Context(), order.Number)
+	foundOrder, err := oh.ordersStorage.GetOrder(req.Context(), order.Number)
 	if err == nil {
 		if foundOrder.UserID == order.UserID {
 			res.WriteHeader(http.StatusOK)
@@ -44,7 +44,7 @@ func (os *OrdersHandler) PostUserOrders(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	err = os.ordersStorage.CreateOrder(req.Context(), order)
+	err = oh.ordersStorage.CreateOrder(req.Context(), order)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusUnprocessableEntity)
 		return
