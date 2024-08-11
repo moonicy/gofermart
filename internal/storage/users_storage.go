@@ -85,10 +85,10 @@ func (us *UsersStorage) GetUserByAuth(ctx context.Context, token string) (models
 	return user, nil
 }
 
-func (us *UsersStorage) GetBalance(ctx context.Context, token string) (int, int, error) {
+func (us *UsersStorage) GetBalance(ctx context.Context, token string) (float64, float64, error) {
 	row := us.db.QueryRowContext(ctx, `SELECT accrual, withdrawn FROM users WHERE auth_token = $1`, token)
-	var accrual sql.NullInt64
-	var withdrawn sql.NullInt64
+	var accrual sql.NullFloat64
+	var withdrawn sql.NullFloat64
 	err := row.Scan(&accrual, &withdrawn)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -96,12 +96,12 @@ func (us *UsersStorage) GetBalance(ctx context.Context, token string) (int, int,
 		}
 		return 0, 0, err
 	}
-	return int(accrual.Int64), int(withdrawn.Int64), nil
+	return accrual.Float64, withdrawn.Float64, nil
 }
 
-func (us *UsersStorage) AddAccrual(ctx context.Context, userID int, accrual int) error {
+func (us *UsersStorage) AddAccrual(ctx context.Context, userID int, accrual float64) error {
 	db := GetDBorTX(ctx, us.db)
-	_, err := db.ExecContext(ctx, `UPDATE users SET accrual = users.accrual + $1 WHERE id = $3`, accrual, userID)
+	_, err := db.ExecContext(ctx, `UPDATE users SET accrual = users.accrual + $1 WHERE id = $2`, accrual, userID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {

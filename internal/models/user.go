@@ -10,8 +10,8 @@ type User struct {
 	ID               int       `json:"id"`
 	Login            string    `json:"login"`
 	Password         string    `json:"password"`
-	Accrual          int       `json:"current"`
-	Withdrawn        int       `json:"withdrawn"`
+	Accrual          float64   `json:"current"`
+	Withdrawn        float64   `json:"withdrawn"`
 	AuthToken        string    `json:"auth_token"`
 	AuthTokenExpired time.Time `json:"auth_token_expired"`
 }

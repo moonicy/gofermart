@@ -38,8 +38,8 @@ func (uh *UsersHandler) PostUserReqister(res http.ResponseWriter, req *http.Requ
 		Name:     "Authorization",
 		Value:    user.AuthToken,
 		Expires:  user.AuthTokenExpired,
-		Secure:   true,
-		HttpOnly: true,
+		Secure:   false,
+		HttpOnly: false,
 	})
 
 }

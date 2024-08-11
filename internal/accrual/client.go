@@ -42,7 +42,7 @@ func (cl *Client) GetOrderInfo(number string) (models.Order, error) {
 		return models.Order{}, ErrTooManyRequests
 	}
 
-	body, err := io.ReadAll(req.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return models.Order{}, err
 	}

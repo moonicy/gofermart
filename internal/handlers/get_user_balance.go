@@ -8,8 +8,8 @@ import (
 )
 
 type BalanceResponse struct {
-	Accrual   int `json:"current"`
-	Withdrawn int `json:"withdrawn"`
+	Accrual   float64 `json:"current"`
+	Withdrawn float64 `json:"withdrawn"`
 }
 
 func (uh *UsersHandler) GetUserBalance(res http.ResponseWriter, req *http.Request) {
