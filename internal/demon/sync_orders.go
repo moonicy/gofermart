@@ -66,6 +66,10 @@ func (so *SyncOrders) MakeJob(ctx context.Context, order models.Order) func() er
 			}
 			return err
 		}
+
+		info.UserID = order.UserID
+		info.ID = order.ID
+
 		err = so.uos.UpdateAccrual(ctx, info)
 		if err != nil {
 			return err

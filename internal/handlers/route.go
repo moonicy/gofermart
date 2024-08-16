@@ -6,7 +6,7 @@ import (
 	"github.com/moonicy/gofermart/internal/storage"
 )
 
-func NewRoute(uh *UsersHandler, oh *OrdersHandler, us *storage.UsersStorage) *chi.Mux {
+func NewRoute(uh *UsersHandler, oh *OrdersHandler, us *storage.UsersStorage, mh *MovementHandler) *chi.Mux {
 	router := chi.NewRouter()
 	router.Route("/api", func(r chi.Router) {
 		r.Post("/user/register", uh.PostUserReqister)
@@ -17,9 +17,9 @@ func NewRoute(uh *UsersHandler, oh *OrdersHandler, us *storage.UsersStorage) *ch
 			r.Get("/orders", oh.GetUserOrders)
 			r.Route("/balance", func(r chi.Router) {
 				r.Get("/", uh.GetUserBalance)
-				r.Post("/withdraw", oh.PostUserBalanceWithdraw)
+				r.Post("/withdraw", mh.PostUserBalanceWithdraw)
 			})
-			//r.Get("/withdrawals", GetUserWithdrawals)
+			r.Get("/withdrawals", mh.GetUserWithdrawals)
 		})
 	})
 

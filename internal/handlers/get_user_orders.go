@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/moonicy/gofermart/internal/models"
-	"log"
 	"net/http"
 	"time"
 )
@@ -33,6 +32,8 @@ func NewOrdersResponse(o []models.Order) OrdersResponse {
 func (oh *OrdersHandler) GetUserOrders(res http.ResponseWriter, req *http.Request) {
 	var orders []models.Order
 
+	res.Header().Set("Content-Type", "application/json")
+
 	user := models.GetUserFromContext(req.Context())
 
 	orders, err := oh.ordersStorage.GetOrders(req.Context(), user.ID)
@@ -48,7 +49,7 @@ func (oh *OrdersHandler) GetUserOrders(res http.ResponseWriter, req *http.Reques
 
 	out, err := json.Marshal(result)
 	if err != nil {
-		log.Fatal(err)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 	}
 	res.Write(out)
 }

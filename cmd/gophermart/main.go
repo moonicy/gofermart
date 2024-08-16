@@ -28,6 +28,7 @@ func main() {
 	us := storage.NewUsersStorage(db)
 	os := storage.NewOrdersStorage(db)
 	uos := storage.NewUserOrderStorage(db, os, us)
+	ms := storage.NewMovementsStorage(db, us, os)
 
 	cl := accrual.NewClient(cfg.AccrualSystemAddress)
 	syncOrders := demon.NewSyncOrders(os, cl, us, uos)
@@ -35,8 +36,9 @@ func main() {
 
 	uh := handlers.NewUsersHandler(us)
 	oh := handlers.NewOrdersHandler(os)
+	mh := handlers.NewMovementHandler(ms)
 
-	route := handlers.NewRoute(uh, oh, us)
+	route := handlers.NewRoute(uh, oh, us, mh)
 
 	server := &http.Server{
 		Addr:    cfg.Host,

@@ -15,15 +15,11 @@ type BalanceResponse struct {
 func (uh *UsersHandler) GetUserBalance(res http.ResponseWriter, req *http.Request) {
 	user := models.GetUserFromContext(req.Context())
 
-	accrual, withdrawn, err := uh.usersStorage.GetBalance(req.Context(), user.AuthToken)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	res.Header().Set("Content-Type", "application/json")
 
 	resBody := BalanceResponse{
-		Accrual:   accrual,
-		Withdrawn: withdrawn,
+		Accrual:   user.Accrual,
+		Withdrawn: user.Withdrawn,
 	}
 
 	out, err := json.Marshal(resBody)

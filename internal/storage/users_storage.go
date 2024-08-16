@@ -65,11 +65,11 @@ func (us *UsersStorage) SetToken(ctx context.Context, user models.User) error {
 
 func (us *UsersStorage) GetUserByAuth(ctx context.Context, token string) (models.User, error) {
 	var user models.User
-	row := us.db.QueryRowContext(ctx, `SELECT id, login, password, accrual, auth_token, auth_token_expired FROM users WHERE auth_token = $1`, token)
+	row := us.db.QueryRowContext(ctx, `SELECT id, login, password, accrual, withdrawn, auth_token, auth_token_expired FROM users WHERE auth_token = $1`, token)
 	var authToken sql.NullString
 	var authTokenExpired sql.NullTime
 
-	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Accrual, &authToken, &authTokenExpired)
+	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Accrual, &user.Withdrawn, &authToken, &authTokenExpired)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.User{}, ErrNotFound
@@ -85,23 +85,22 @@ func (us *UsersStorage) GetUserByAuth(ctx context.Context, token string) (models
 	return user, nil
 }
 
-func (us *UsersStorage) GetBalance(ctx context.Context, token string) (float64, float64, error) {
-	row := us.db.QueryRowContext(ctx, `SELECT accrual, withdrawn FROM users WHERE auth_token = $1`, token)
-	var accrual sql.NullFloat64
-	var withdrawn sql.NullFloat64
-	err := row.Scan(&accrual, &withdrawn)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, 0, ErrNotFound
-		}
-		return 0, 0, err
-	}
-	return accrual.Float64, withdrawn.Float64, nil
-}
-
 func (us *UsersStorage) AddAccrual(ctx context.Context, userID int, accrual float64) error {
 	db := GetDBorTX(ctx, us.db)
 	_, err := db.ExecContext(ctx, `UPDATE users SET accrual = users.accrual + $1 WHERE id = $2`, accrual, userID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			err = ErrConflict
+		}
+		return err
+	}
+	return nil
+}
+
+func (us *UsersStorage) AddWithdraw(ctx context.Context, userID int, sum float64) error {
+	db := GetDBorTX(ctx, us.db)
+	_, err := db.ExecContext(ctx, `UPDATE users SET accrual = users.accrual - $1, withdrawn = users.withdrawn + $1 WHERE id = $2`, sum, userID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
