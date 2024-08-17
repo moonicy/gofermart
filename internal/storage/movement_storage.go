@@ -42,6 +42,10 @@ func (ms *MovementsStorage) GetMovements(ctx context.Context, userID int) ([]mod
 		}
 	}
 
+	if row.Err() != nil {
+		return movements, row.Err()
+	}
+
 	for row.Next() {
 		err = row.Scan(&movement.ID, &movement.Number, &movement.UserID, &movement.Sum, &movement.ProcessedAt)
 		if err != nil {

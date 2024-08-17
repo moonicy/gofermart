@@ -42,18 +42,23 @@ func (so *SyncOrders) Run(ctx context.Context) func() {
 		}
 	}
 
+	exit := make(chan struct{})
+
 	go func() {
 		handle()
 		for {
 			select {
 			case <-ticker.C:
 				handle()
+			case <-exit:
+				return
 			}
 		}
 	}()
 	return func() {
 		ticker.Stop()
 		wp.Close()
+		exit <- struct{}{}
 	}
 }
 

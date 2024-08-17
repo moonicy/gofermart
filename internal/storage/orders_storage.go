@@ -53,6 +53,10 @@ func (os *OrdersStorage) GetOrders(ctx context.Context, userID int) ([]models.Or
 		}
 	}
 
+	if row.Err() != nil {
+		return orders, row.Err()
+	}
+
 	for row.Next() {
 		err = row.Scan(&order.ID, &order.Number, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
@@ -74,6 +78,10 @@ func (os *OrdersStorage) GetBatch(ctx context.Context) ([]models.Order, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return orders, ErrNotFound
 		}
+	}
+
+	if row.Err() != nil {
+		return orders, row.Err()
 	}
 
 	for row.Next() {
