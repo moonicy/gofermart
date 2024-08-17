@@ -9,6 +9,7 @@ import (
 func NewRoute(uh *UsersHandler, oh *OrdersHandler, us *storage.UsersStorage, mh *MovementHandler) *chi.Mux {
 	router := chi.NewRouter()
 	router.Route("/api", func(r chi.Router) {
+		r.Use(middleware.GzipMiddleware)
 		r.Post("/user/register", uh.PostUserReqister)
 		r.Post("/user/login", uh.PostUserLogin)
 		r.Route("/user", func(r chi.Router) {
