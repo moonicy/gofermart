@@ -41,7 +41,7 @@ func (oh *OrdersHandler) GetUserOrders(res http.ResponseWriter, req *http.Reques
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if orders == nil {
+	if len(orders) == 0 {
 		res.WriteHeader(http.StatusNoContent)
 		return
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 func (uh *UsersHandler) PostUserLogin(res http.ResponseWriter, req *http.Request) {
-	var user models.User
+	var ur UserRequest
 
 	res.Header().Set("Content-Type", "application/json")
 
@@ -18,21 +18,30 @@ func (uh *UsersHandler) PostUserLogin(res http.ResponseWriter, req *http.Request
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 	}
-	if err = json.Unmarshal(body, &user); err != nil {
+	if err = json.Unmarshal(body, &ur); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 	}
 
-	foundUser, err := uh.usersStorage.GetUser(req.Context(), user.Login)
+	err = ur.Validate()
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	foundUser, err := uh.usersStorage.GetUser(req.Context(), ur.Login)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 	}
-	if !hash.VerifyPassword(user.Password, foundUser.Password) {
-		http.Error(res, err.Error(), http.StatusUnauthorized)
+	if !hash.VerifyPassword(ur.Password, foundUser.Password) {
+		http.Error(res, "Password incorrect", http.StatusUnauthorized)
 	}
-	token := hash.MakeToken(user.Login)
-	expiredAt := time.Now().Add(time.Hour * 24)
-	user.AuthToken = token
-	user.AuthTokenExpired = expiredAt
+
+	user := models.User{
+		Login:            ur.Login,
+		Password:         ur.Password,
+		AuthToken:        hash.MakeToken(ur.Login),
+		AuthTokenExpired: time.Now().Add(time.Hour * 24),
+	}
 
 	err = uh.usersStorage.SetToken(req.Context(), user)
 	if err != nil {
@@ -41,8 +50,8 @@ func (uh *UsersHandler) PostUserLogin(res http.ResponseWriter, req *http.Request
 
 	http.SetCookie(res, &http.Cookie{
 		Name:     "Authorization",
-		Value:    token,
-		Expires:  expiredAt,
+		Value:    user.AuthToken,
+		Expires:  user.AuthTokenExpired,
 		Secure:   true,
 		HttpOnly: true,
 	})

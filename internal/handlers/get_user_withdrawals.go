@@ -38,6 +38,11 @@ func (mh *MovementHandler) GetUserWithdrawals(res http.ResponseWriter, req *http
 		return
 	}
 
+	if len(movements) == 0 {
+		res.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	wr := NewWithdrawalsResponse(movements)
 
 	out, err := json.Marshal(wr)
