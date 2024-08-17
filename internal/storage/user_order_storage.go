@@ -2,24 +2,23 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/moonicy/gofermart/internal/contextkey"
 	"github.com/moonicy/gofermart/internal/models"
 )
 
 type UserOrderStorage struct {
-	db *sql.DB
+	tx Tx
 	os *OrdersStorage
 	us *UsersStorage
 }
 
-func NewUserOrderStorage(db *sql.DB, os *OrdersStorage, us *UsersStorage) *UserOrderStorage {
-	return &UserOrderStorage{db: db, os: os, us: us}
+func NewUserOrderStorage(tx Tx, os *OrdersStorage, us *UsersStorage) *UserOrderStorage {
+	return &UserOrderStorage{tx: tx, os: os, us: us}
 }
 
 func (uos *UserOrderStorage) UpdateAccrual(ctx context.Context, order models.Order) error {
-	tx, err := uos.db.Begin()
+	tx, err := uos.tx.Begin()
 	if err != nil {
 		return err
 	}

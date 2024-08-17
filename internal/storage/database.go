@@ -17,7 +17,16 @@ type DB interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
-func NewDB(cfg config.Config) (*sql.DB, error) {
+type Tx interface {
+	Begin() (*sql.Tx, error)
+}
+
+type TxDB interface {
+	DB
+	Tx
+}
+
+func NewDB(cfg config.Config) (TxDB, error) {
 	db, err := sql.Open("pgx", cfg.DatabaseURI)
 	if err != nil {
 		return nil, err
@@ -25,7 +34,7 @@ func NewDB(cfg config.Config) (*sql.DB, error) {
 	return db, nil
 }
 
-func GetDBorTX(ctx context.Context, db *sql.DB) DB {
+func GetDBorTX(ctx context.Context, db DB) DB {
 	val := ctx.Value(contextkey.TransactionKey)
 	tx, ok := val.(*sql.Tx)
 	if ok {

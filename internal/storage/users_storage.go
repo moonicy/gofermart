@@ -10,10 +10,10 @@ import (
 )
 
 type UsersStorage struct {
-	db *sql.DB
+	db DB
 }
 
-func NewUsersStorage(db *sql.DB) *UsersStorage {
+func NewUsersStorage(db DB) *UsersStorage {
 	return &UsersStorage{db: db}
 }
 

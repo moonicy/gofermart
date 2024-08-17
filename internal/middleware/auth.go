@@ -4,12 +4,17 @@ import (
 	"context"
 	"errors"
 	"github.com/moonicy/gofermart/internal/contextkey"
+	"github.com/moonicy/gofermart/internal/models"
 	"github.com/moonicy/gofermart/internal/storage"
 	"net/http"
 	"time"
 )
 
-func Auth(us *storage.UsersStorage) func(http.Handler) http.Handler {
+type UsersStorage interface {
+	GetUserByAuth(ctx context.Context, token string) (models.User, error)
+}
+
+func Auth(us UsersStorage) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 			cookie, err := req.Cookie("Authorization")

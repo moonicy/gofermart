@@ -2,14 +2,13 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 )
 
 type Migrator struct {
-	db *sql.DB
+	db DB
 }
 
-func NewMigrator(db *sql.DB) *Migrator {
+func NewMigrator(db DB) *Migrator {
 	return &Migrator{db: db}
 }
 

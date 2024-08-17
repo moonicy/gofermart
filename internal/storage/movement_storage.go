@@ -11,12 +11,12 @@ import (
 )
 
 type MovementsStorage struct {
-	db *sql.DB
+	db TxDB
 	us *UsersStorage
 	os *OrdersStorage
 }
 
-func NewMovementsStorage(db *sql.DB, us *UsersStorage, os *OrdersStorage) *MovementsStorage {
+func NewMovementsStorage(db TxDB, us *UsersStorage, os *OrdersStorage) *MovementsStorage {
 	return &MovementsStorage{db: db, us: us, os: os}
 }
 

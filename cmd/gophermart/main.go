@@ -31,7 +31,7 @@ func main() {
 	ms := storage.NewMovementsStorage(db, us, os)
 
 	cl := accrual.NewClient(cfg.AccrualSystemAddress)
-	syncOrders := demon.NewSyncOrders(os, cl, us, uos)
+	syncOrders := demon.NewSyncOrders(os, cl, uos)
 	cancelFn := syncOrders.Run(ctx)
 
 	uh := handlers.NewUsersHandler(us)

@@ -1,11 +1,20 @@
 package handlers
 
-import "github.com/moonicy/gofermart/internal/storage"
+import (
+	"context"
+	"github.com/moonicy/gofermart/internal/models"
+)
 
-type UsersHandler struct {
-	usersStorage *storage.UsersStorage
+type UsersStorage interface {
+	CreateUser(ctx context.Context, user models.User) error
+	GetUser(ctx context.Context, login string) (models.User, error)
+	SetToken(ctx context.Context, user models.User) error
 }
 
-func NewUsersHandler(usersStorage *storage.UsersStorage) *UsersHandler {
+type UsersHandler struct {
+	usersStorage UsersStorage
+}
+
+func NewUsersHandler(usersStorage UsersStorage) *UsersHandler {
 	return &UsersHandler{usersStorage}
 }

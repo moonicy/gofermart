@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/moonicy/gofermart/internal/accrual"
 	"github.com/moonicy/gofermart/internal/models"
-	"github.com/moonicy/gofermart/internal/storage"
 	"github.com/moonicy/gofermart/pkg/workerpool"
 	"sync/atomic"
 	"time"
@@ -14,16 +13,27 @@ import (
 
 var ErrRateLimit = errors.New("rate limit exceeded")
 
-type SyncOrders struct {
-	isReachRateLimit atomic.Bool
-	accrualCl        *accrual.Client
-	us               *storage.UsersStorage
-	os               *storage.OrdersStorage
-	uos              *storage.UserOrderStorage
+type Client interface {
+	GetOrderInfo(number string) (models.Order, error)
 }
 
-func NewSyncOrders(orderStorage *storage.OrdersStorage, accrualCl *accrual.Client, us *storage.UsersStorage, uos *storage.UserOrderStorage) *SyncOrders {
-	return &SyncOrders{os: orderStorage, accrualCl: accrualCl, us: us, uos: uos}
+type OrdersStorage interface {
+	GetBatch(ctx context.Context) ([]models.Order, error)
+}
+
+type UserOrderStorage interface {
+	UpdateAccrual(ctx context.Context, order models.Order) error
+}
+
+type SyncOrders struct {
+	isReachRateLimit atomic.Bool
+	accrualCl        Client
+	os               OrdersStorage
+	uos              UserOrderStorage
+}
+
+func NewSyncOrders(orderStorage OrdersStorage, accrualCl Client, uos UserOrderStorage) *SyncOrders {
+	return &SyncOrders{os: orderStorage, accrualCl: accrualCl, uos: uos}
 }
 
 func (so *SyncOrders) Run(ctx context.Context) func() {

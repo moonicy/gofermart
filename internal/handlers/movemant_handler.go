@@ -1,11 +1,19 @@
 package handlers
 
-import "github.com/moonicy/gofermart/internal/storage"
+import (
+	"context"
+	"github.com/moonicy/gofermart/internal/models"
+)
 
-type MovementHandler struct {
-	movementsStorage *storage.MovementsStorage
+type MovementsStorage interface {
+	GetMovements(ctx context.Context, userID int) ([]models.Movement, error)
+	MakeWithdraw(ctx context.Context, movement models.Movement) error
 }
 
-func NewMovementHandler(movementsStorage *storage.MovementsStorage) *MovementHandler {
+type MovementHandler struct {
+	movementsStorage MovementsStorage
+}
+
+func NewMovementHandler(movementsStorage MovementsStorage) *MovementHandler {
 	return &MovementHandler{movementsStorage}
 }
