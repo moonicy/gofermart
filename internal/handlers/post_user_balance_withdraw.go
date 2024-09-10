@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/ShiraazMoollatjie/goluhn"
 	"github.com/moonicy/gofermart/internal/models"
 	"io"
@@ -12,13 +11,6 @@ import (
 type WithdrawRequest struct {
 	Order string  `json:"order"`
 	Sum   float64 `json:"sum"`
-}
-
-func (wr WithdrawRequest) Validate() error {
-	if wr.Sum < 0 {
-		return errors.New("negative amount")
-	}
-	return goluhn.Validate(wr.Order)
 }
 
 func (mh *MovementHandler) PostUserBalanceWithdraw(res http.ResponseWriter, req *http.Request) {
@@ -39,8 +31,12 @@ func (mh *MovementHandler) PostUserBalanceWithdraw(res http.ResponseWriter, req 
 		return
 	}
 
-	err = wr.Validate()
-	if err != nil {
+	if wr.Sum < 0 {
+		http.Error(res, "negative amount", http.StatusUnprocessableEntity)
+		return
+	}
+
+	if err = goluhn.Validate(wr.Order); err != nil {
 		http.Error(res, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

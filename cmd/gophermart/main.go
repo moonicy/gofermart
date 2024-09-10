@@ -10,35 +10,39 @@ import (
 	"github.com/moonicy/gofermart/internal/storage"
 	"github.com/moonicy/gofermart/pkg/logger"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancelFn := context.WithCancel(context.Background())
 	cfg := config.NewConfig()
 	sugar := logger.NewLogger()
 	db, err := storage.NewDB(cfg)
 	if err != nil {
 		sugar.Fatal(err)
 	}
-	mg := storage.NewMigrator(db)
-	err = mg.Migrate(ctx)
+	migrator := storage.NewMigrator(db)
+	err = migrator.Migrate(ctx)
 	if err != nil {
 		sugar.Fatal(err)
 	}
-	us := storage.NewUsersStorage(db)
-	os := storage.NewOrdersStorage(db)
-	uos := storage.NewUserOrderStorage(db, os, us)
-	ms := storage.NewMovementsStorage(db, us, os)
+	userStorage := storage.NewUsersStorage(db)
+	ordersStorage := storage.NewOrdersStorage(db)
+	userOrderStorage := storage.NewUserOrderStorage(db, ordersStorage, userStorage)
+	movementsStorage := storage.NewMovementsStorage(db, userStorage, ordersStorage)
 
-	cl := accrual.NewClient(cfg.AccrualSystemAddress)
-	syncOrders := demon.NewSyncOrders(os, cl, uos)
-	cancelFn := syncOrders.Run(ctx)
+	client := accrual.NewClient(cfg.AccrualSystemAddress)
+	syncOrders := demon.NewSyncOrders(ordersStorage, client, userOrderStorage)
+	syncOrders.Run(ctx)
 
-	uh := handlers.NewUsersHandler(us)
-	oh := handlers.NewOrdersHandler(os)
-	mh := handlers.NewMovementHandler(ms)
+	usersHandler := handlers.NewUsersHandler(userStorage)
+	ordersHandler := handlers.NewOrdersHandler(ordersStorage)
+	movementHandler := handlers.NewMovementHandler(movementsStorage)
 
-	route := handlers.NewRoute(uh, oh, us, mh)
+	route := handlers.NewRoute(usersHandler, ordersHandler, userStorage, movementHandler)
 
 	server := &http.Server{
 		Addr:    cfg.Host,
@@ -49,5 +53,18 @@ func main() {
 	if err != nil {
 		sugar.Fatal(err)
 	}
+
+	exit := make(chan os.Signal, 1)
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
+	<-exit
+
+	ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelShutdown()
+
+	if err := server.Shutdown(ctxShutdown); err != nil {
+		sugar.Fatalw("Server shutdown error", "error", err)
+	}
+
 	cancelFn()
+	time.Sleep(1 * time.Second)
 }

@@ -28,22 +28,26 @@ type UserOrderStorage interface {
 type SyncOrders struct {
 	isReachRateLimit atomic.Bool
 	accrualCl        Client
-	os               OrdersStorage
-	uos              UserOrderStorage
+	ordersStorage    OrdersStorage
+	userOrderStorage UserOrderStorage
 }
 
-func NewSyncOrders(orderStorage OrdersStorage, accrualCl Client, uos UserOrderStorage) *SyncOrders {
-	return &SyncOrders{os: orderStorage, accrualCl: accrualCl, uos: uos}
+func NewSyncOrders(orderStorage OrdersStorage, accrualCl Client, userOrderStorage UserOrderStorage) *SyncOrders {
+	return &SyncOrders{ordersStorage: orderStorage, accrualCl: accrualCl, userOrderStorage: userOrderStorage}
 }
 
-func (so *SyncOrders) Run(ctx context.Context) func() {
+// Run запускает процесс синхронизации заказов с accrual.
+// Работает на основе worker pool, для того чтобы распараллелить синхронизацию.
+// Такая синхронизация выбрана потому что в accrual не имеется ручки для сихронизации батчем.
+// В worker pool 10 workers поэтому мы синхронизируем в момент сразу 10 заказов.
+func (so *SyncOrders) Run(ctx context.Context) {
 	wp := workerpool.NewWorkerPool(so.Worker, 10)
 	wp.Run()
 
 	ticker := time.NewTicker(1 * time.Second)
 
 	handle := func() {
-		batch, err := so.os.GetBatch(ctx)
+		batch, err := so.ordersStorage.GetBatch(ctx)
 		if err != nil {
 			return
 		}
@@ -52,26 +56,24 @@ func (so *SyncOrders) Run(ctx context.Context) func() {
 		}
 	}
 
-	exit := make(chan struct{})
-
 	go func() {
+		defer func() {
+			ticker.Stop()
+			wp.Close()
+		}()
 		handle()
 		for {
 			select {
 			case <-ticker.C:
 				handle()
-			case <-exit:
+			case <-ctx.Done():
 				return
 			}
 		}
 	}()
-	return func() {
-		ticker.Stop()
-		wp.Close()
-		exit <- struct{}{}
-	}
 }
 
+// MakeJob синхронизирует один заказ.
 func (so *SyncOrders) MakeJob(ctx context.Context, order models.Order) func() error {
 	return func() error {
 		info, err := so.accrualCl.GetOrderInfo(order.Number)
@@ -85,7 +87,7 @@ func (so *SyncOrders) MakeJob(ctx context.Context, order models.Order) func() er
 		info.UserID = order.UserID
 		info.ID = order.ID
 
-		err = so.uos.UpdateAccrual(ctx, info)
+		err = so.userOrderStorage.UpdateAccrual(ctx, info)
 		if err != nil {
 			return err
 		}
@@ -93,6 +95,8 @@ func (so *SyncOrders) MakeJob(ctx context.Context, order models.Order) func() er
 	}
 }
 
+// Worker единица работы с механизмом лимитирования по количеству запросов.
+// Вынесен отдельно т.к. имеет уникальный механизм лимитирования, который необходим только для синхронизации заказов.
 func (so *SyncOrders) Worker(ch <-chan workerpool.Job) {
 	for {
 		if so.isReachRateLimit.Load() {

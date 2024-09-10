@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -19,7 +20,7 @@ type Client struct {
 }
 
 func NewClient(host string) *Client {
-	return &Client{cl: http.Client{}, host: host}
+	return &Client{cl: http.Client{Timeout: 5 * time.Second}, host: host}
 }
 
 func (cl *Client) GetOrderInfo(number string) (models.Order, error) {

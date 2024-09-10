@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-type BalanceResponse struct {
+type balanceResponse struct {
 	Accrual   float64 `json:"current"`
 	Withdrawn float64 `json:"withdrawn"`
 }
@@ -17,7 +17,7 @@ func (uh *UsersHandler) GetUserBalance(res http.ResponseWriter, req *http.Reques
 
 	res.Header().Set("Content-Type", "application/json")
 
-	resBody := BalanceResponse{
+	resBody := balanceResponse{
 		Accrual:   user.Accrual,
 		Withdrawn: user.Withdrawn,
 	}
